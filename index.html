@@ -1,1 +1,431 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Megumi Chi Tiêu</title>
 
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f6fa;
+    color: #222;
+}
+
+header {
+    background: #6c5ce7;
+    color: white;
+    padding: 22px;
+    text-align: center;
+}
+
+header h1 {
+    font-size: 28px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 25px auto;
+    padding: 0 15px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.08);
+}
+
+.card h3 {
+    color: #777;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.money {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.income {
+    color: #00b894;
+}
+
+.expense {
+    color: #d63031;
+}
+
+.balance {
+    color: #6c5ce7;
+}
+
+.form {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.08);
+    margin-bottom: 25px;
+}
+
+.form h2 {
+    margin-bottom: 15px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+input, select, button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 9px;
+    border: 1px solid #ddd;
+    font-size: 15px;
+}
+
+button {
+    background: #6c5ce7;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    opacity: .9;
+}
+
+.transactions {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.08);
+}
+
+.transaction {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.transaction:last-child {
+    border-bottom: none;
+}
+
+.transaction-info strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.transaction-info small {
+    color: #888;
+}
+
+.delete {
+    background: #ff7675;
+    width: auto;
+    padding: 8px 12px;
+}
+
+.empty {
+    text-align: center;
+    color: #999;
+    padding: 25px;
+}
+
+@media (max-width: 700px) {
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .transaction {
+        gap: 10px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>💰 Megumi Chi Tiêu</h1>
+    <p>Quản lý chi tiêu cá nhân</p>
+</header>
+
+<div class="container">
+
+    <div class="cards">
+
+        <div class="card">
+            <h3>SỐ DƯ</h3>
+            <div class="money balance" id="balance">0 ₫</div>
+        </div>
+
+        <div class="card">
+            <h3>TỔNG THU</h3>
+            <div class="money income" id="income">0 ₫</div>
+        </div>
+
+        <div class="card">
+            <h3>TỔNG CHI</h3>
+            <div class="money expense" id="expense">0 ₫</div>
+        </div>
+
+    </div>
+
+    <div class="form">
+
+        <h2>➕ Thêm giao dịch</h2>
+
+        <div class="form-grid">
+
+            <input
+                type="text"
+                id="description"
+                placeholder="Tên khoản tiền..."
+            >
+
+            <input
+                type="number"
+                id="amount"
+                placeholder="Số tiền..."
+            >
+
+            <select id="type">
+                <option value="expense">Chi tiền</option>
+                <option value="income">Thu tiền</option>
+            </select>
+
+            <select id="category">
+                <option value="Ăn uống">🍜 Ăn uống</option>
+                <option value="Mua sắm">🛍️ Mua sắm</option>
+                <option value="Di chuyển">🚌 Di chuyển</option>
+                <option value="Học tập">📚 Học tập</option>
+                <option value="Giải trí">🎮 Giải trí</option>
+                <option value="Hóa đơn">🧾 Hóa đơn</option>
+                <option value="Khác">📦 Khác</option>
+            </select>
+
+            <input
+                type="date"
+                id="date"
+            >
+
+            <button onclick="addTransaction()">
+                Thêm giao dịch
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="transactions">
+
+        <h2>📋 Lịch sử giao dịch</h2>
+
+        <div id="transactionList">
+            <div class="empty">
+                Chưa có giao dịch nào
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+let transactions =
+    JSON.parse(localStorage.getItem("megumiTransactions")) || [];
+
+const dateInput = document.getElementById("date");
+
+dateInput.valueAsDate = new Date();
+
+function formatMoney(number) {
+    return new Intl.NumberFormat("vi-VN").format(number) + " ₫";
+}
+
+function saveData() {
+    localStorage.setItem(
+        "megumiTransactions",
+        JSON.stringify(transactions)
+    );
+}
+
+function addTransaction() {
+
+    const description =
+        document.getElementById("description").value.trim();
+
+    const amount =
+        Number(document.getElementById("amount").value);
+
+    const type =
+        document.getElementById("type").value;
+
+    const category =
+        document.getElementById("category").value;
+
+    const date =
+        document.getElementById("date").value;
+
+    if (!description || !amount || !date) {
+        alert("Vui lòng nhập đầy đủ thông tin!");
+        return;
+    }
+
+    const transaction = {
+        id: Date.now(),
+        description,
+        amount,
+        type,
+        category,
+        date
+    };
+
+    transactions.push(transaction);
+
+    saveData();
+
+    document.getElementById("description").value = "";
+    document.getElementById("amount").value = "";
+
+    render();
+}
+
+function deleteTransaction(id) {
+
+    if (!confirm("Bạn có chắc muốn xóa giao dịch này?")) {
+        return;
+    }
+
+    transactions =
+        transactions.filter(item => item.id !== id);
+
+    saveData();
+
+    render();
+}
+
+function render() {
+
+    let income = 0;
+    let expense = 0;
+
+    transactions.forEach(item => {
+
+        if (item.type === "income") {
+            income += item.amount;
+        } else {
+            expense += item.amount;
+        }
+
+    });
+
+    const balance = income - expense;
+
+    document.getElementById("income").textContent =
+        formatMoney(income);
+
+    document.getElementById("expense").textContent =
+        formatMoney(expense);
+
+    document.getElementById("balance").textContent =
+        formatMoney(balance);
+
+    const list =
+        document.getElementById("transactionList");
+
+    if (transactions.length === 0) {
+
+        list.innerHTML =
+            '<div class="empty">Chưa có giao dịch nào</div>';
+
+        return;
+    }
+
+    list.innerHTML = "";
+
+    const sorted =
+        [...transactions].sort(
+            (a, b) => new Date(b.date) - new Date(a.date)
+        );
+
+    sorted.forEach(item => {
+
+        const div =
+            document.createElement("div");
+
+        div.className = "transaction";
+
+        const sign =
+            item.type === "income" ? "+" : "-";
+
+        const color =
+            item.type === "income"
+                ? "income"
+                : "expense";
+
+        div.innerHTML = `
+
+            <div class="transaction-info">
+
+                <strong>
+                    ${item.category} ${item.description}
+                </strong>
+
+                <small>
+                    ${item.date}
+                </small>
+
+            </div>
+
+            <div>
+
+                <strong class="${color}">
+                    ${sign}${formatMoney(item.amount)}
+                </strong>
+
+                <button
+                    class="delete"
+                    onclick="deleteTransaction(${item.id})"
+                >
+                    Xóa
+                </button>
+
+            </div>
+        `;
+
+        list.appendChild(div);
+
+    });
+}
+
+render();
+
+</script>
+
+</body>
+</html>
